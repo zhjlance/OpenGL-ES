@@ -17,6 +17,7 @@ public class Triangle {
     private int[] mIndices = new int[]{0, 1, 2}; // EBO索引数据
     private int mVboId;
     private int mEboId;
+    private int mVaoId; // 添加 VAO ID
     private int mProgram;
     // 定义的三角形顶点坐标数组
     private final float[] mTriangleCoords = new float[]{
@@ -31,10 +32,8 @@ public class Triangle {
         // 加载并编译着色器
         initShaders(context);
         // 下面对VBO和EBO的操作，一定要在createGLProgram之后
-        // 生成并绑定 VBO
-        initVbo();
-        // 生成并绑定 EBO
-        initEbo();
+        // 使用 VAO，对 VBO 和 EBO 的绑定进行封装（简化 draw）
+        initVao();
     }
 
     // 初始化顶点数据
@@ -52,6 +51,35 @@ public class Triangle {
         String vertexShaderCode = ShaderController.loadShaderCodeFromFile("triangle_vertex.glsl", context);
         String fragmentShaderCode = ShaderController.loadShaderCodeFromFile("triangle_fragment.glsl", context);
         mProgram = ShaderController.createGLProgram(vertexShaderCode, fragmentShaderCode);
+    }
+    // 初始化 VAO，封装 VBO 和 EBO 的绑定
+    private void initVao() {
+        // 生成 VAO
+        int[] vaos = new int[1];
+        GLES30.glGenVertexArrays(1, vaos, 0);
+        mVaoId = vaos[0];
+        GLES30.glBindVertexArray(mVaoId); // 绑定 VAO
+
+        // 初始化 VBO
+        initVbo();
+
+        // 初始化 EBO
+        initEbo();
+
+        // 配置顶点属性
+        int positionHandle = GLES30.glGetAttribLocation(mProgram, "vPosition");
+        GLES30.glEnableVertexAttribArray(positionHandle); // 启用顶点属性
+        GLES30.glVertexAttribPointer(
+                positionHandle,
+                COORDS_PER_VERTEX, // 每个顶点的分量个数
+                GLES30.GL_FLOAT,   // 数据类型
+                false,
+                0,
+                0  // 偏移量（VBO 内部偏移位置）
+        );
+
+        // 解绑 VAO（可选，防止后续操作误改 VAO 状态）
+        GLES30.glBindVertexArray(0);
     }
     private void initVbo() {
         int[] vbos = new int[1];
@@ -86,48 +114,31 @@ public class Triangle {
     }
 
     public void draw() {
-        // 定义的fragment的颜色数组，表示每个像素的颜色
+        // 设置片元着色器的颜色
         float[] color = new float[]{0.0f, 1.0f, 0.0f, 1.0f};
-        // 使用program对象
+
+        // 使用 Shader Program
         GLES30.glUseProgram(mProgram);
-        // 绑定 EBO
-        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mEboId);
 
-        // 获取顶点属性的位置
-        int positionHandle = GLES30.glGetAttribLocation(mProgram, "vPosition");
-        GLES30.glEnableVertexAttribArray(positionHandle);
+        // 绑定 VAO（自动恢复顶点属性、VBO 和 EBO 的绑定状态）
+        GLES30.glBindVertexArray(mVaoId);
 
-        // 绑定 VBO（存储顶点坐标数据）
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, mVboId);
-
-        // 设置顶点属性指针（告诉OpenGL如何解释顶点数据缓冲区中的数据）
-        GLES30.glVertexAttribPointer(
-                positionHandle,    // 顶点属性位置句柄，指示OpenGL应该将这些数据连接到哪个着色器属性
-                COORDS_PER_VERTEX, // 每个顶点包含的坐标数
-                GLES30.GL_FLOAT,   // 数据类型
-                false,             // 是否数据应该被标准化，通常用于整数类型的数据
-                0,                 // 步长，指定在连续的顶点属性之间的偏移量，如果所有属性是紧密排列在一起的，可以设置为0
-                0);                // 0 是为绑定的 缓冲区对象（VBO） 指定偏移，否则，顶点缓冲区（mVertexBuffer）的直接内存地址
-
-        // 设置片元着色器属性指针
+        // 设置片段着色器的颜色值
         int colorHandle = GLES30.glGetUniformLocation(mProgram, "vColor");
         GLES30.glUniform4fv(colorHandle, 1, color, 0);
 
         // 绘制三角形
         GLES30.glDrawElements(GLES30.GL_TRIANGLES, mIndices.length, GLES30.GL_UNSIGNED_INT, 0);
 
-        // 禁用顶点属性数组
-        GLES30.glDisableVertexAttribArray(positionHandle);
-        // 解绑 EBO（索引缓冲区）
-        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
-        // 解绑 VBO（顶点缓冲区）
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
+        // 解绑 VAO（可选，防止影响其他绘图操作）
+        GLES30.glBindVertexArray(0);
     }
 
     // 释放资源
     public void release() {
-        GLES30.glDeleteBuffers(1, new int[]{mVboId}, 0); // 释放VBO
-        GLES30.glDeleteBuffers(1, new int[]{mEboId}, 0); // 释放EBO
-        GLES30.glDeleteProgram(mProgram);
+        GLES30.glDeleteBuffers(1, new int[]{mVboId}, 0); // 删除 VBO
+        GLES30.glDeleteBuffers(1, new int[]{mEboId}, 0); // 删除 EBO
+        GLES30.glDeleteVertexArrays(1, new int[]{mVaoId}, 0); // 删除 VAO
+        GLES30.glDeleteProgram(mProgram); // 删除 shader program
     }
 }
