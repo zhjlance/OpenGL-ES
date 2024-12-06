@@ -30,4 +30,8 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
         mTriangle.draw();
     }
+
+    public void onDestroy() {
+        mTriangle.release();
+    }
 }

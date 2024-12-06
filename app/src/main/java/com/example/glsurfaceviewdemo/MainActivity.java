@@ -14,4 +14,11 @@ public class MainActivity extends AppCompatActivity {
         mGlSurfaceViewTest = new GLSurfaceViewTest(this);
         setContentView(mGlSurfaceViewTest);
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        mGlSurfaceViewTest.onDestroy();
+    }
 }

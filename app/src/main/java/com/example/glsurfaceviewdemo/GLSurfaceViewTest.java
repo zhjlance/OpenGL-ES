@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 
 public class GLSurfaceViewTest extends GLSurfaceView {
+    private GLRenderTest mGlRenderTest;
     public GLSurfaceViewTest(Context context) {
         super(context);
 
@@ -12,6 +13,11 @@ public class GLSurfaceViewTest extends GLSurfaceView {
         setEGLContextClientVersion(3);
 
         // 设置渲染器Renderer，函数调用后，里面会启动一个新线程构造EGL环境
-        setRenderer(new GLRenderTest(context));
+        mGlRenderTest = new GLRenderTest(context);
+        setRenderer(mGlRenderTest);
+    }
+
+    public void onDestroy() {
+        mGlRenderTest.onDestroy();
     }
 }
