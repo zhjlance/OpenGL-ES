@@ -40,7 +40,7 @@ public class ShaderController {
     }
 
     // 创建并编译着色器
-    public static int compileShader(int type, String shaderCode) {
+    private static int compileShader(int type, String shaderCode) {
         // 创建一个着色器
         int shader = GLES30.glCreateShader(type);
         // 将着色器代码设置到着色器对象中

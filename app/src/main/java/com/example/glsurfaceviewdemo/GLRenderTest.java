@@ -9,6 +9,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class GLRenderTest implements GLSurfaceView.Renderer {
     private Triangle mTriangle;
+    private TextureRender mTextureRender;
     private Context mContext;
 
     public GLRenderTest(Context context) {
@@ -17,7 +18,8 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES30.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        mTriangle = new Triangle(mContext);
+        // mTriangle = new Triangle(mContext);
+        mTextureRender = new TextureRender(mContext);
     }
 
     @Override
@@ -28,7 +30,8 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
     @Override
     public void onDrawFrame(GL10 gl){
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
-        mTriangle.draw();
+        // mTriangle.draw();
+        mTextureRender.draw();
     }
 
     public void onDestroy() {
