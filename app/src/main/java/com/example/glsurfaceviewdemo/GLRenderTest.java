@@ -35,6 +35,7 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
     }
 
     public void onDestroy() {
-        mTriangle.release();
+        // mTriangle.release();
+        mTextureRender.release();
     }
 }
