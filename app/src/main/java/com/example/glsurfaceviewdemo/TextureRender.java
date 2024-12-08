@@ -30,9 +30,11 @@ public class TextureRender {
     private int mTexCoordHandle = -1; // 纹理坐标属性的操作句柄
     private int mTMatrixHandle = -1;  // 变换矩阵操作句柄，用于实现顶点的变换
     private int mSamplerHandle = -1;  // 纹理采样器操作句柄，相当于一个指向某个纹理单元的指针
+    Bitmap mBitmap;
 
-    public TextureRender(Context context) {
+    public TextureRender(Context context, Bitmap bitmap) {
         mContext = context;
+        mBitmap = bitmap;
         initialize();
     }
 
@@ -88,6 +90,7 @@ public class TextureRender {
         // 检查 OpenGL 错误
         checkOpenGLError();
     }
+
     // 设置顶点坐标和纹理坐标
     private void setupVertexAttribPointer() {
         // 指定位置属性的布局(设置顶点位置数据)
@@ -140,22 +143,15 @@ public class TextureRender {
         mCoordBuffer.position(0);
         GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER, mCoordBuffer.capacity() * 4, mCoordBuffer, GLES30.GL_STATIC_DRAW);
     }
-    // 加载图片
-    private Bitmap loadImage() {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inScaled = false;
-        return BitmapFactory.decodeResource(mContext.getResources(), R.drawable.android_logo, options);
-    }
+
     // 上传纹理到GPU
     private int uploadTexture() {
-        Bitmap bitmap = loadImage();
         int[] textureIds = new int[1];
         GLES30.glGenTextures(1, textureIds, 0); // 创建纹理
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureIds[0]); // 绑定纹理
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR); // 设置缩小策略
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR); // 设置放大策略
-        GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RGBA, bitmap, 0); // 纹理上传到GPU
-        bitmap.recycle(); // 回收bitmap
+        GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RGBA, mBitmap, 0); // 纹理上传到GPU
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0); // 解绑纹理，避免后续误操作
         return textureIds[0];
     }
