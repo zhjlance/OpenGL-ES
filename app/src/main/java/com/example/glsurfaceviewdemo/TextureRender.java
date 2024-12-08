@@ -25,12 +25,13 @@ public class TextureRender {
     private FloatBuffer mCoordBuffer;
     private int mProgram = -1;
     private int mVboId;
-    private float[] mTranslateMatrix = new float[16];
+
     private int mPositionHandle = -1; // 顶点位置属性的操作句柄
     private int mTexCoordHandle = -1; // 纹理坐标属性的操作句柄
-    private int mTMatrixHandle = -1;  // 变换矩阵操作句柄，用于实现顶点的变换
+    private int mMVPMatrixHandle = -1;  // 变换矩阵操作句柄，用于实现顶点的变换
     private int mSamplerHandle = -1;  // 纹理采样器操作句柄，相当于一个指向某个纹理单元的指针
     Bitmap mBitmap;
+    private float[] mMVPMatrix; // mvp矩阵
 
     public TextureRender(Context context, Bitmap bitmap) {
         mContext = context;
@@ -43,13 +44,9 @@ public class TextureRender {
         initVertexBuffer();           // 初始化坐标数据
         initShaders(mContext);        // 加载并编译着色器
         initVbo();                    // 初始化 VBO
-        initMatrix();                 // 初始化变换矩阵
         initHandles();                // 获取GPU和Shader的一些操作接口
     }
-    // 初始化变换矩阵
-    private void initMatrix() {
-        Matrix.setIdentityM(mTranslateMatrix, 0); // 设置为单位矩阵
-    }
+
     // 获取GPU和Shader的一些操作接口
     private void initHandles() {
         // 获取顶点坐标操作接口的句柄
@@ -61,7 +58,7 @@ public class TextureRender {
         validateAttributeLocation(mTexCoordHandle, "aTexCoord");
         GLES30.glEnableVertexAttribArray(mTexCoordHandle); // 启用纹理坐标属性数组
         // 获取变换矩阵操作接口的句柄
-        mTMatrixHandle = GLES30.glGetUniformLocation(mProgram, "uTMatrix");
+        mMVPMatrixHandle = GLES30.glGetUniformLocation(mProgram, "uMVPMatrix");
         // 用于获取Shader当中纹理采样器的操作接口的句柄
         mSamplerHandle = GLES30.glGetUniformLocation(mProgram, "uSampler");
     }
@@ -80,7 +77,7 @@ public class TextureRender {
         // 设置顶点坐标和纹理坐标给OpenGL
         setupVertexAttribPointer();
         // 上传变换矩阵
-        GLES30.glUniformMatrix4fv(mTMatrixHandle, 1, false, mTranslateMatrix, 0);
+        GLES30.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
         // 绑定纹理并设置采样器
         bindTexture();
         // 绘制矩形
@@ -89,6 +86,16 @@ public class TextureRender {
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         // 检查 OpenGL 错误
         checkOpenGLError();
+    }
+
+    // 接收mvp矩阵
+    public void setCustomMVPMatrix(float[] mvpMatrix) {
+        if (mvpMatrix.length == 16) { // 确保传入的数组长度为 16
+            mMVPMatrix = new float[16];
+            System.arraycopy(mvpMatrix, 0, mMVPMatrix, 0, 16);
+        } else {
+            Log.e("TextureRender", "mvp Matrix length invalid!");
+        }
     }
 
     // 设置顶点坐标和纹理坐标

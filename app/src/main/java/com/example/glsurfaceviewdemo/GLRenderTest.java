@@ -23,6 +23,10 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
     private int mViewportY = 0; // 视口起始纵坐标
     private Bitmap mBitmap;
 
+    private float[] mProjectionMatrix = new float[16]; // 投影矩阵
+    private float[] mViewMatrix = new float[16]; // 视图矩阵
+    private float[] mMVPMatrix = new float[16]; // mvp矩阵
+
     public GLRenderTest(Context context) {
         this.mContext = context;
         mBitmap = loadImage();
@@ -38,10 +42,13 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mSurfaceWidth = width;
         mSurfaceHeight = height;
-        calculateViewport(); // 计算视口参数
 
-        GLES30.glViewport(mViewportX, mViewportY, mViewportWidth, mViewportHeight); // 设置视口
-        // GLES30.glViewport(0, 0,  width, height); // 视口变换时候不能从屏幕左上角开始
+        // calculateViewport(); // 计算视口参数
+        calculateViewport2(width, height); // 计算正交投影参数
+        mTextureRender.setCustomMVPMatrix(mMVPMatrix); // 设置mvp矩阵给渲染器
+
+        // GLES30.glViewport(mViewportX, mViewportY, mViewportWidth, mViewportHeight); // 视口调整
+        GLES30.glViewport(0, 0,  width, height); // 正交矩阵从屏幕左上角开始即可
     }
 
     @Override
@@ -84,5 +91,26 @@ public class GLRenderTest implements GLSurfaceView.Renderer {
         // 计算视口的中心位置
         mViewportX = (mSurfaceWidth - mViewportWidth) / 2;
         mViewportY = (mSurfaceHeight - mViewportHeight) / 2;
+    }
+    // 正交投影变换
+    private void calculateViewport2(int width, int height) {
+        float imageAspectRatio = (float) mBitmap.getWidth() / (float) mBitmap.getHeight();
+        float surfaceAspectRatio = (float) width / (float) height;
+
+        if (imageAspectRatio > surfaceAspectRatio) {
+            // 图片宽高比大于屏幕,按照宽度填满计算高度
+            float tb = imageAspectRatio / surfaceAspectRatio;
+            // 计算投影矩阵
+            Matrix.orthoM(mProjectionMatrix, 0, -1.0f, 1.0f, -tb, tb, -1.0f, 1.0f);
+        } else {
+            // 图片宽高比小于等于屏幕,按照高度填满计算宽度
+            float tb = surfaceAspectRatio / imageAspectRatio;
+            // 计算投影矩阵
+            Matrix.orthoM(mProjectionMatrix, 0, -tb, tb, -1.0f, 1.0f, -1.0f, 1.0f);
+        }
+        // 计算视图矩阵
+        Matrix.setLookAtM(mViewMatrix, 0, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+        // 计算mvp矩阵
+        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
     }
 }
